@@ -5,6 +5,7 @@
 #include "trajectory_generator_node/Trajectory.h"
 
 #include "trajectory_follower_node/StartTrajectory.h"
+#include "ck_utilities/Logger.hpp"
 
 #include <thread>
 #include <string>
@@ -51,7 +52,7 @@ bool start_trajectory(trajectory_follower_node::StartTrajectory::Request &reques
 	if (is_running_traj)
 	{
 		std::lock_guard<std::recursive_mutex> lock(running_traj_lock);
-		ROS_ERROR("Failed to start %s! Already running trajectory %s!", request.traj_name.c_str(), running_trajectory_name.c_str());
+		ck::log_error << "Failed to start " << request.traj_name << "! Already running trajectory" << running_trajectory_name << "!" << std::flush;
 	}
 	else
 	{
@@ -59,7 +60,7 @@ bool start_trajectory(trajectory_follower_node::StartTrajectory::Request &reques
 		bool success = get_trajectory(request.traj_name, t);
 		if (success)
 		{
-    		ROS_INFO("Starting trajectory: %s", request.traj_name.c_str());
+    		ck::log_info << "Starting trajectory: " << request.traj_name << std::flush;
 			std::lock_guard<std::recursive_mutex> lock(running_traj_lock);
 			running_trajectory_name = request.traj_name;
 			running_trajectory = t;
@@ -68,7 +69,7 @@ bool start_trajectory(trajectory_follower_node::StartTrajectory::Request &reques
 		}
 		else
 		{
-			ROS_ERROR("Failed to start %s! Could not get trajectory!", request.traj_name.c_str());
+			ck::log_error << "Failed to start " << request.traj_name << "! Could not get trajectory!" << std::flush;
 		}
 	}
 
