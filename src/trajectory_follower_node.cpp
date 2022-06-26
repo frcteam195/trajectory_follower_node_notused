@@ -2,15 +2,24 @@
 #include "std_msgs/String.h"
 
 #include "trajectory_generator_node/GetTrajectory.h"
+#include "trajectory_generator_node/Trajectory.h"
+
+#include "trajectory_follower_node/StartTrajectory.h"
 
 #include <thread>
 #include <string>
 #include <mutex>
 #include <vector>
+#include <atomic>
 
 ros::NodeHandle* node;
 
 ros::ServiceClient get_trajectory_service;
+
+std::recursive_mutex running_traj_lock;
+trajectory_generator_node::Trajectory running_trajectory;
+std::string running_trajectory_name;
+std::atomic_bool is_running_traj {false};
 
 ros::ServiceClient& get_trajectory_service_get()
 {
@@ -21,7 +30,7 @@ ros::ServiceClient& get_trajectory_service_get()
 	return get_trajectory_service;
 };
 
-void get_trajectory(std::string trajectory_name)
+bool get_trajectory(std::string trajectory_name, trajectory_generator_node::Trajectory& traj)
 {
 	if (get_trajectory_service_get())
 	{
@@ -30,9 +39,41 @@ void get_trajectory(std::string trajectory_name)
 		bool service_success = get_trajectory_service_get().call(gt);
 		if (service_success)
 		{
-			//gt.response.
+			traj = gt.response.trajectory;
+		}
+		return service_success;
+	}
+	return false;
+}
+
+bool start_trajectory(trajectory_follower_node::StartTrajectory::Request &request, trajectory_follower_node::StartTrajectory::Response &response)
+{
+	if (is_running_traj)
+	{
+		std::lock_guard<std::recursive_mutex> lock(running_traj_lock);
+		ROS_ERROR("Failed to start %s! Already running trajectory %s!", request.traj_name.c_str(), running_trajectory_name.c_str());
+	}
+	else
+	{
+		trajectory_generator_node::Trajectory t;
+		bool success = get_trajectory(request.traj_name, t);
+		if (success)
+		{
+    		ROS_INFO("Starting trajectory: %s", request.traj_name.c_str());
+			std::lock_guard<std::recursive_mutex> lock(running_traj_lock);
+			running_trajectory_name = request.traj_name;
+			running_trajectory = t;
+			is_running_traj = true;
+			return true;
+		}
+		else
+		{
+			ROS_ERROR("Failed to start %s! Could not get trajectory!", request.traj_name.c_str());
 		}
 	}
+
+    (void)response;
+    return false;
 }
 
 int main(int argc, char **argv)
@@ -42,7 +83,19 @@ int main(int argc, char **argv)
 	ros::NodeHandle n;
 
 	node = &n;
+	ros::ServiceServer start_traj_service = node->advertiseService("start_trajectory", start_trajectory);
 
-	ros::spin();
+	ros::Rate rate(100);
+	while (ros::ok())
+	{
+		ros::spinOnce();
+		if (is_running_traj)
+		{
+			std::lock_guard<std::recursive_mutex> lock(running_traj_lock);
+			//TODO:...
+		}
+		rate.sleep();
+	}
+
 	return 0;
 }
