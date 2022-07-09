@@ -2,7 +2,7 @@
 #include "std_msgs/String.h"
 
 #include "trajectory_generator_node/GetTrajectory.h"
-#include "trajectory_generator_node/Trajectory.h"
+#include "trajectory_generator_node/OutputTrajectory.h"
 
 #include "trajectory_follower_node/StartTrajectory.h"
 #include "ck_utilities/Logger.hpp"
@@ -18,7 +18,7 @@ ros::NodeHandle* node;
 ros::ServiceClient get_trajectory_service;
 
 std::recursive_mutex running_traj_lock;
-trajectory_generator_node::Trajectory running_trajectory;
+trajectory_generator_node::OutputTrajectory running_trajectory;
 std::string running_trajectory_name;
 std::atomic_bool is_running_traj {false};
 
@@ -31,7 +31,7 @@ ros::ServiceClient& get_trajectory_service_get()
 	return get_trajectory_service;
 };
 
-bool get_trajectory(std::string trajectory_name, trajectory_generator_node::Trajectory& traj)
+bool get_trajectory(std::string trajectory_name, trajectory_generator_node::OutputTrajectory& traj)
 {
 	if (get_trajectory_service_get())
 	{
@@ -56,7 +56,7 @@ bool start_trajectory(trajectory_follower_node::StartTrajectory::Request &reques
 	}
 	else
 	{
-		trajectory_generator_node::Trajectory t;
+		trajectory_generator_node::OutputTrajectory t;
 		bool success = get_trajectory(request.traj_name, t);
 		if (success)
 		{
