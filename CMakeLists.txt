@@ -46,11 +46,10 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs message_generation rio_c
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Joystick.msg
-#   Joystick_Status.msg
-# )
+add_message_files(
+  FILES
+  FollowerStatus.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(

@@ -1,0 +1,11 @@
+float64 leftMotorOutputRadPerSec
+float64 leftMotorFeedforwardVoltage
+float64 leftMotorAccelRadPerSec2
+
+float64 rightMotorOutputRadPerSec
+float64 rightMotorFeedforwardVoltage
+float64 rightMotorAccelRadPerSec2
+
+bool trajectoryActive
+bool trajectoryCompleted
+int32 trajectory_id
