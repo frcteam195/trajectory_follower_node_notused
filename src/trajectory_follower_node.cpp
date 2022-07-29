@@ -7,6 +7,7 @@
 #include "trajectory_generator_node/OutputTrajectory.h"
 
 #include "ck_utilities/Logger.hpp"
+#include "ck_utilities/planners/DriveMotionPlanner.hpp"
 
 #include <atomic>
 #include <mutex>
@@ -24,6 +25,8 @@ std::string running_trajectory_name;
 std::atomic_bool is_running_traj{false};
 
 trajectory_follower_node::FollowerStatus follower_status;
+
+ck::planners::DriveMotionPlanner motion_planner;
 
 ros::ServiceClient &get_trajectory_service_get()
 {
@@ -126,18 +129,21 @@ int main(int argc, char **argv)
                         }
                     }
 
-                    if (mOutputData.trajectoryActive && !mOutputData.trajectoryCompleted) {
-                        DriveOutput d = motionPlanner.update(mInputData.timestamp, mInputData.poseInches);
-                        mOutputData.leftMotorOutputRadPerSec = d.left_velocity;
-                        mOutputData.leftMotorFeedforwardVoltage = d.left_feedforward_voltage;
-                        mOutputData.leftMotorAccelRadPerSec2 = d.left_accel;
+        if (mOutputData.trajectoryActive && !mOutputData.trajectoryCompleted)
+        {
+            DriveOutput d = motionPlanner.update(mInputData.timestamp, mInputData.poseInches);
+            mOutputData.leftMotorOutputRadPerSec = d.left_velocity;
+            mOutputData.leftMotorFeedforwardVoltage = d.left_feedforward_voltage;
+            mOutputData.leftMotorAccelRadPerSec2 = d.left_accel;
 
-                        mOutputData.rightMotorOutputRadPerSec = d.right_velocity;
-                        mOutputData.rightMotorFeedforwardVoltage = d.right_feedforward_voltage;
-                        mOutputData.rightMotorAccelRadPerSec2 = d.right_accel;
-                    }
+            mOutputData.rightMotorOutputRadPerSec = d.right_velocity;
+            mOutputData.rightMotorFeedforwardVoltage = d.right_feedforward_voltage;
+            mOutputData.rightMotorAccelRadPerSec2 = d.right_accel;
+        }
+
         */
-        if (true /* motionPlanner.isDone() */)
+
+        if (motion_planner.isDone())
         {
             zero_follower_status();
             follower_status.trajectoryCompleted = true;
@@ -147,7 +153,7 @@ int main(int argc, char **argv)
         if (true /* mInputData.forceStop*/)
         {
             zero_follower_status();
-            // motionPlanner.reset();
+            motion_planner.reset();
             follower_status.trajectoryCompleted = true;
             follower_status.trajectoryActive = false;
         }
